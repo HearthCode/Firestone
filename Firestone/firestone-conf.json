@@ -7,6 +7,9 @@
   // Lobby server port binding
   "lobby_server_port": 1119,
 
-  // Path to server SSL certificate file
-  "lobby_server_certificate_file": "firestone.pem"
+  // Path to server SSL PFX file (public certificate and private key)
+  "lobby_server_certificate_file": "Firestone.pfx",
+
+  // Client timeout (seconds)
+  "client_connection_timeout": 10
 }
