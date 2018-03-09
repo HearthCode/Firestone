@@ -114,14 +114,14 @@ namespace Firestone
 
             // Inbound connection wait loop
             while (true) {
-                waitForConnection();
+                await waitForConnection();
             }
         }
 
         /// <summary>
         /// Wait asynchronously for a new connection (relinquishing control to the wait pump)
         /// </summary>
-        private async void waitForConnection() {
+        private async Task waitForConnection() {
 
             var client = await tcpListener.AcceptTcpClientAsync();
             var clientIp = ((IPEndPoint) client.Client.RemoteEndPoint).Address;
@@ -142,7 +142,7 @@ namespace Firestone
                 sslStream.WriteTimeout = timeoutSeconds * 1000;
 
                 // Dispatch connection to a new task
-                await Task.Run(connectionHandler);
+                await connectionHandler();
             }
 
             // Something is probably wrong with our SSL certificate or key
