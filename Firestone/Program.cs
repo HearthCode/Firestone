@@ -1,12 +1,23 @@
 ﻿using System;
+using System.IO;
+using System.Reflection;
+using Microsoft.Extensions.Configuration;
 
 namespace Firestone
 {
-    class Program
+    internal class Firestone
     {
-        static void Main(string[] args)
-        {
-            Console.WriteLine("Hello World!");
+        /// <summary>
+        /// Application configuration
+        /// </summary>
+        public static IConfiguration Configuration { get; set; }
+
+        public static void Main(string[] args) {
+            var config = new ConfigurationBuilder()
+                .SetBasePath(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location))
+                .AddJsonFile("firestone-conf.json");
+
+            Configuration = config.Build();
         }
     }
 }
