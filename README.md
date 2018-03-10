@@ -5,42 +5,51 @@ Developed in Visual Studio 2017. Targets .NET Core 2.0.
 
 ### Pre-requisites
 
-- .NET Core 2.0
-- [Optional] An SSL certificate
-- [Windows] PowerShell 3.0 or later
+- .NET Core 2.0 (https://github.com/dotnet/core)
+- Google Protobuf (installed if needed via the build instructions below)
+- [Optional] An SSL certificate (created if needed via the build instructions below)
+- `.proto` files describing the Hearthstone lobby server protocol (see below)
+- [Windows] PowerShell 3 or later
 - [Linux] OpenSSL
-- A modified Hearthstone client
+- A modified Hearthstone client (see below)
 
 ### Build
+
+First clone the repository:
 
 ```
 git clone https://github.com/HearthCode/Firestone
 cd Firestone
+```
+
+Run the pre-build setup:
+
+**Windows:**
+
+```
+powershell -file setup.ps1 -protopath <PATH_TO_YOUR_PROTO_DIRECTORY> -domain <FQDN>
+```
+
+**Linux:** Not implemented yet.
+
+Replace `<PATH_TO_YOUR_PROTO_DIRECTORY>` with the name of a directory containing your Hearthstone server proto files. If no proto path is specified, any existing protos in the solution's `protos` folder will be re-used instead.
+
+Replace `<FQDN>` with the fully-qualified domain name of your server. This is used for SSL certificate generation. If not specified, uses `localhost`.
+
+This will download Google Protobuf if needed, create the needed directory structure, copy and compile your `.proto` files into C# source code, and generate an SSL certificate called `Firestone.pfx` in the Firestone project directory.
+
+If `Firestone.pfx` already exists, the existing certificate will be re-used. If you have a pre-existing certificate you would like to use, overwrite `Firestone.pfx` with your own `.pfx` file.
+
+Your `.proto` files must use the `proto3` syntax and include `option csharp_namespace=...` for each package using all-lowercase namespaces, with no nested folders. These are not provided in the repository - you must obtain them yourself.
+
+Build the application:
+
+```
 dotnet restore -r <RID>
 dotnet publish -c Release -r <RID>
 ```
 
 Replace `<RID>` with a resource identifier string from https://docs.microsoft.com/en-us/dotnet/core/rid-catalog
-
-If you have an SSL certificate, place it in the output directory with the name `Firestone.pfx`.
-
-If you do not have an SSL certificate, generate one as follows:
-
-**Windows**
-```
-cd utils
-powershell -file gen-certificate.ps1 -domain <FQDN>
-```
-
-**Linux**
-```
-cd utils
-./gen-certificate.sh <FQDN>
-```
-
-Replace `<FQDN>` with your server's domain name. For local use only, use `localhost`.
-
-This will generate a self-signed certificate and place it in the output directory with the name `Firestone.pfx`.
 
 ### Configuration
 
@@ -116,6 +125,10 @@ The other Hearthstone servers we are aware of are all in private repositories. T
 **Q. Does this server do anything useful?**
 
 Not yet. We just started on it.
+
+**Q. Can you tell me how to get the `.proto` files needed to compile the server?**
+
+No.
 
 **Q. Can you tell me how to modify the Hearthstone client so it can connect to Firestone?**
 
