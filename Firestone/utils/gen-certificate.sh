@@ -2,6 +2,7 @@
 
 # Generate a self-signed SSL certificate for use with Firestone
 # Written by Katy Coe 2018
+# https://github.com/HearthCode/Firestone
 # http://www.hearthcode.org
 
 # Usage: ./gen-certificate.sh <fully_qualified_domain_name_of_your_server>
