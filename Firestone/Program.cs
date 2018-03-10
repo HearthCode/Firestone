@@ -114,6 +114,7 @@ namespace Firestone
 
             // Inbound connection wait loop
             while (true) {
+                Log.Debug("In new connection wait loop");
                 await waitForConnection();
             }
         }
