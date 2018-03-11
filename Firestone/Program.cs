@@ -29,14 +29,14 @@ namespace Firestone
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         /// <summary>
-        /// Service endpoints provided by the server
+        /// Service endpoints provided by the server (keyed by hash)
         /// </summary>
-        public static Dictionary<ServiceDescriptor, Type> ExportedServices;
+        public static Dictionary<int, Type> ExportedServices;
 
         /// <summary>
-        /// Service endpoints provided by the client
+        /// Service endpoints provided by the client (keyed by hash)
         /// </summary>
-        public static Dictionary<ServiceDescriptor, Type> ImportedServices;
+        public static Dictionary<int, Type> ImportedServices;
 
         /// <summary>
         /// Application entry point
@@ -72,14 +72,14 @@ namespace Firestone
             ExportedServices = (from s in serviceTypes
                 where s.Key.Type == ServiceType.Export
                 select new {
-                    Key = s.Key,
+                    Key = s.Key.GetHash(),
                     Value = s.Value
                 }).ToDictionary(x => x.Key, x => x.Value);
 
             ImportedServices = (from s in serviceTypes
                 where s.Key.Type == ServiceType.Import
                 select new {
-                    Key = s.Key,
+                    Key = s.Key.GetHash(),
                     Value = s.Value
                 }).ToDictionary(x => x.Key, x => x.Value);
 
@@ -179,8 +179,8 @@ namespace Firestone
                 sslStream.ReadTimeout = timeoutSeconds * 1000;
                 sslStream.WriteTimeout = timeoutSeconds * 1000;
 
-                // Start connection message pump
-                await connectionHandler(sslStream);
+                // Create session and start the connection's message pump
+                await new Session(sslStream, clientIp).RunMessageLoop();
             }
 
             // Something is probably wrong with our SSL certificate or key
@@ -201,25 +201,6 @@ namespace Firestone
                 Log.Info("Closing connection from " + clientIp);
                 sslStream.Close();
                 client.Close();
-            }
-        }
-
-        /// <summary>
-        /// Handle the connection for an individual client asynchronously (relinquishing control to the wait pump)
-        /// </summary>
-        private async Task connectionHandler(SslStream stream) {
-            // Incoming RPC message pump
-            // The Hearthstone protocol works as follows:
-            // 1. The first message received is of type bnet.protocol.RpcHeader which specifies the service and method
-            // (and therefore the message type) of the next message
-            // 2. The next message received is of the message type specified by RpcHeader
-            // 3. Go to step 1
-            try {
-                var rpcHeader = bnet.protocol.Header.Parser.ParseInt16DelimitedFrom(stream);
-                var connect = bnet.protocol.connection.ConnectRequest.Parser.ParseFrom(stream, (int) rpcHeader.Size);
-            }
-            catch (Exception ex) {
-                Console.WriteLine(ex.Message);
             }
         }
     }

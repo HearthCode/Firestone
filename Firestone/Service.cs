@@ -12,5 +12,10 @@ namespace Firestone
         /// Retrieves the descriptor corresponding to this service
         /// </summary>
         public ServiceDescriptor Descriptor => GetType().GetCustomAttribute<ServiceDescriptor>();
+
+        /// <summary>
+        /// The connected session this service instance is bound to
+        /// </summary>
+        protected Session Session;
     }
 }
