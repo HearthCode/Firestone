@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.Serialization.Json;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -114,18 +115,19 @@ namespace Firestone
 
             // Inbound connection wait loop
             while (true) {
-                Log.Debug("In new connection wait loop");
-                await waitForConnection();
+                Log.Debug("Ready to accept next connection");
+                var client = await tcpListener.AcceptTcpClientAsync();
+
+                // Dispatch connection to a new task
+                var c = connectionTask(client);
             }
         }
 
         /// <summary>
-        /// Wait asynchronously for a new connection (relinquishing control to the wait pump)
+        /// Set up a new inbound connection
         /// </summary>
-        private async Task waitForConnection() {
-
-            var client = await tcpListener.AcceptTcpClientAsync();
-            var clientIp = ((IPEndPoint) client.Client.RemoteEndPoint).Address;
+        private async Task connectionTask(TcpClient client) {
+            var clientIp = ((IPEndPoint)client.Client.RemoteEndPoint).Address;
 
             Log.Info("Accepted inbound connection from " + clientIp);
 
@@ -142,8 +144,8 @@ namespace Firestone
                 sslStream.ReadTimeout = timeoutSeconds * 1000;
                 sslStream.WriteTimeout = timeoutSeconds * 1000;
 
-                // Dispatch connection to a new task
-                await connectionHandler();
+                // Start connection message pump
+                await connectionHandler(sslStream);
             }
 
             // Something is probably wrong with our SSL certificate or key
@@ -170,9 +172,20 @@ namespace Firestone
         /// <summary>
         /// Handle the connection for an individual client asynchronously (relinquishing control to the wait pump)
         /// </summary>
-        private async Task connectionHandler() {
-            // TODO: Do something with the client
-            Task.Delay(4000).Wait();
+        private async Task connectionHandler(SslStream stream) {
+            // Incoming RPC message pump
+            // The Hearthstone protocol works as follows:
+            // 1. The first message received is of type bnet.protocol.RpcHeader which specifies the service and method
+            // (and therefore the message type) of the next message
+            // 2. The next message received is of the message type specified by RpcHeader
+            // 3. Go to step 1
+            try {
+                var rpcHeader = bnet.protocol.Header.Parser.ParseInt16DelimitedFrom(stream);
+                var connect = bnet.protocol.connection.ConnectRequest.Parser.ParseFrom(stream, (int) rpcHeader.Size);
+            }
+            catch (Exception ex) {
+                Console.WriteLine(ex.Message);
+            }
         }
     }
 }
