@@ -16,6 +16,9 @@ using log4net;
 
 namespace Firestone
 {
+    /// <summary>
+    /// The main server application
+    /// </summary>
     internal class Firestone
     {
         /// <summary>

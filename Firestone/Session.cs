@@ -8,6 +8,10 @@ using log4net;
 
 namespace Firestone
 {
+    /// <summary>
+    /// This class represents a self-contained session between one client and the server
+    /// It is created after TLS authentication but before any application layer data is exchanged
+    /// </summary>
     internal class Session
     {
         /// <summary>
@@ -35,6 +39,11 @@ namespace Firestone
         /// </summary>
         private Dictionary<int, Service> exportedServices = new Dictionary<int, Service>();
 
+        /// <summary>
+        /// Create a new session
+        /// </summary>
+        /// <param name="stream">Authenticated SslStream of the connection</param>
+        /// <param name="ip">The client's IP address (for logging purposes)</param>
         public Session(SslStream stream, IPAddress ip) {
             // Store the underlying network connection and IP address
             this.stream = stream;

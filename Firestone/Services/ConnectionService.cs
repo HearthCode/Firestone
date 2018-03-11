@@ -9,6 +9,10 @@ namespace Firestone.Services
     [ServiceDescriptor(Name="bnet.protocol.connection.ConnectionService", Id=0, Type=ServiceType.Export)]
     internal class ConnectionService : Service
     {
+        /// <summary>
+        /// ConnectRequest is always the first method called after a connection has been established.
+        /// It exports a set of service endpoints to the server and sends a list of hashes of services it wishes to import
+        /// </summary>
         [MethodDescriptor(Id=1)]
         public void ConnectRequest(ConnectRequest req) {
         }
