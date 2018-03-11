@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Reflection;
-using System.Runtime.Serialization.Json;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -28,6 +29,16 @@ namespace Firestone
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         /// <summary>
+        /// Service endpoints provided by the server
+        /// </summary>
+        public static Dictionary<ServiceDescriptor, Type> ExportedServices;
+
+        /// <summary>
+        /// Service endpoints provided by the client
+        /// </summary>
+        public static Dictionary<ServiceDescriptor, Type> ImportedServices;
+
+        /// <summary>
         /// Application entry point
         /// </summary>
         public static void Main(string[] args) {
@@ -48,7 +59,31 @@ namespace Firestone
 
             Log.Info("Configuration loaded successfully");
 
-            // Start the server
+            // Find all the available RPC services
+            var serviceTypes =
+            (from t in Assembly.GetExecutingAssembly().GetTypes()
+                where t.IsDefined(typeof(ServiceDescriptor), false)
+                select new {
+                    Service = t,
+                    Descriptor = t.GetCustomAttribute<ServiceDescriptor>()
+                }
+            ).ToDictionary(x => x.Descriptor, x => x.Service);
+
+            ExportedServices = (from s in serviceTypes
+                where s.Key.Type == ServiceType.Export
+                select new {
+                    Key = s.Key,
+                    Value = s.Value
+                }).ToDictionary(x => x.Key, x => x.Value);
+
+            ImportedServices = (from s in serviceTypes
+                where s.Key.Type == ServiceType.Import
+                select new {
+                    Key = s.Key,
+                    Value = s.Value
+                }).ToDictionary(x => x.Key, x => x.Value);
+
+            // Start the TCP server
             new ConnectionManager().Run().Wait();
 
             Log.Info("Server shutting down");
