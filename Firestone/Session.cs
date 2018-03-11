@@ -107,7 +107,7 @@ namespace Firestone
                 }
             }
             catch (Exception ex) {
-                Console.WriteLine(ex.Message);
+                Log.Error($"[{clientIp}] Session terminated: {ex.Message}");
             }
         }
     }
