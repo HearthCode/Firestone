@@ -4,6 +4,8 @@ using System.Net;
 using System.Net.Security;
 using System.Reflection;
 using System.Threading.Tasks;
+using bnet.protocol.connection;
+using Google.Protobuf;
 using log4net;
 
 namespace Firestone
@@ -92,11 +94,16 @@ namespace Firestone
             // 2. The next message received is of the message type specified by RpcHeader
             // 3. Go to step 1
             try {
+                // Get the RPC Header message
                 var rpcHeader = bnet.protocol.Header.Parser.ParseInt16DelimitedFrom(stream);
                 var serviceEndpoint = exportedServices[(int) rpcHeader.ServiceId];
+                var (methodEndpointInfo, messageParser) = serviceEndpoint.Methods[(int) rpcHeader.MethodId];
 
-                // TODO: Method to message type mappings
-                var connect = bnet.protocol.connection.ConnectRequest.Parser.ParseFrom(stream, (int)rpcHeader.Size);
+                // Get and parse the message specified in the RPC Header
+                var message = messageParser.ParseFrom(stream, (int)rpcHeader.Size);
+
+                // Dispatch message to handler method
+                methodEndpointInfo.Invoke(serviceEndpoint, new object[] {message});
             }
             catch (Exception ex) {
                 Console.WriteLine(ex.Message);

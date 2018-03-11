@@ -21,7 +21,15 @@ namespace Firestone
         /// This is an extension method for Google.Protobuf.MessageParser<T> to handle reading the next message with
         /// a pre-determined length from a stream. The standard ParseFrom<T> method reads until the end of the stream.
         /// </summary>
-        internal static T ParseFrom<T>(this MessageParser<T> parser, Stream input, int bytesToRead) where T : IMessage<T> {
+        internal static T ParseFrom<T>(this MessageParser<T> parser, Stream input, int bytesToRead) where T : class, IMessage<T> {
+            return ParseFrom((MessageParser) parser, input, bytesToRead) as T;
+        }
+
+        /// <summary>
+        /// This is an extension method for Google.Protobuf.MessageParser to handle reading the next message with
+        /// a pre-determined length from a stream. The standard ParseFrom method reads until the end of the stream.
+        /// </summary>
+        internal static IMessage ParseFrom(this MessageParser parser, Stream input, int bytesToRead) {
             var buf = new byte[bytesToRead];
             input.Read(buf, 0, bytesToRead);
             return parser.ParseFrom(buf);
