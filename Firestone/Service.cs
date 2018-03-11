@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Google.Protobuf;
@@ -33,7 +32,7 @@ namespace Firestone
                 (from m in GetType().GetMethods()
                     where m.IsDefined(typeof(MethodDescriptor), false)
                     select new {
-                        Id = m.GetCustomAttribute<MethodDescriptor>().Id,
+                        m.GetCustomAttribute<MethodDescriptor>().Id,
                         Method = m,
                         MessageParser = m.GetParameters()[0].ParameterType.GetProperty("Parser").GetMethod.Invoke(null, null) as MessageParser
                     }
@@ -45,6 +44,6 @@ namespace Firestone
         /// <summary>
         /// The connected session this service instance is bound to
         /// </summary>
-        protected Session Session;
+        public Session Session { get; set; }
     }
 }

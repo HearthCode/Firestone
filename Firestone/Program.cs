@@ -76,14 +76,14 @@ namespace Firestone
                 where s.Key.Type == ServiceType.Export
                 select new {
                     Key = s.Key.GetHash(),
-                    Value = s.Value
+                    s.Value
                 }).ToDictionary(x => x.Key, x => x.Value);
 
             ImportedServices = (from s in serviceTypes
                 where s.Key.Type == ServiceType.Import
                 select new {
                     Key = s.Key.GetHash(),
-                    Value = s.Value
+                    s.Value
                 }).ToDictionary(x => x.Key, x => x.Value);
 
             // Start the TCP server
@@ -157,14 +157,14 @@ namespace Firestone
                 var client = await tcpListener.AcceptTcpClientAsync();
 
                 // Dispatch connection to a new task
-                var c = connectionTask(client);
+                var c = ConnectionTask(client);
             }
         }
 
         /// <summary>
         /// Set up a new inbound connection
         /// </summary>
-        private async Task connectionTask(TcpClient client) {
+        private async Task ConnectionTask(TcpClient client) {
             var clientIp = ((IPEndPoint)client.Client.RemoteEndPoint).Address;
 
             Log.Info("Accepted inbound connection from " + clientIp);
