@@ -4,8 +4,6 @@ using System.Net;
 using System.Net.Security;
 using System.Reflection;
 using System.Threading.Tasks;
-using bnet.protocol.connection;
-using Google.Protobuf;
 using log4net;
 
 namespace Firestone
@@ -52,7 +50,7 @@ namespace Firestone
             clientIp = ip;
 
             // Create a binding to the connection service (bnet.protocol.connection.ConnectionService)
-            bindExportedService(0x65446991, 0);
+            BindExportedService(0x65446991, 0);
         }
 
         /// <summary>
@@ -61,7 +59,7 @@ namespace Firestone
         /// <param name="hash">The FNV-1a hash of the fully-qualified service name</param>
         /// <param name="index">The desired service ID to bind as</param>
         /// <returns>True if the binding succeeded, false if no matching service could be found</returns>
-        private bool bindExportedService(int hash, int index) {
+        public bool BindExportedService(int hash, int index) {
             // Don't overwrite existing binding
             if (exportedServices.ContainsKey(index)) {
                 Log.Error($"[{clientIp}] Attempted to bind service with hash {hash} to already-used service ID {index}");
@@ -72,6 +70,7 @@ namespace Firestone
             try {
                 var serviceType = Firestone.ExportedServices[hash];
                 var service = Activator.CreateInstance(serviceType) as Service;
+                service.Session = this;
 
                 exportedServices.Add(index, service);
                 Log.Debug($"[{clientIp}] Bound {service.Descriptor.Name} (Id {service.Descriptor.Id}) to session service Id {index}");
@@ -94,16 +93,18 @@ namespace Firestone
             // 2. The next message received is of the message type specified by RpcHeader
             // 3. Go to step 1
             try {
-                // Get the RPC Header message
-                var rpcHeader = bnet.protocol.Header.Parser.ParseInt16DelimitedFrom(stream);
-                var serviceEndpoint = exportedServices[(int) rpcHeader.ServiceId];
-                var (methodEndpointInfo, messageParser) = serviceEndpoint.Methods[(int) rpcHeader.MethodId];
+                while (true) {
+                    // Get the RPC Header message
+                    var rpcHeader = bnet.protocol.Header.Parser.ParseInt16DelimitedFrom(stream);
+                    var serviceEndpoint = exportedServices[(int) rpcHeader.ServiceId];
+                    var (methodEndpointInfo, messageParser) = serviceEndpoint.Methods[(int) rpcHeader.MethodId];
 
-                // Get and parse the message specified in the RPC Header
-                var message = messageParser.ParseFrom(stream, (int)rpcHeader.Size);
+                    // Get and parse the message specified in the RPC Header
+                    var message = messageParser.ParseFrom(stream, (int) rpcHeader.Size);
 
-                // Dispatch message to handler method
-                methodEndpointInfo.Invoke(serviceEndpoint, new object[] {message});
+                    // Dispatch message to handler method and yield while it is being processed
+                    await Task.Run(() => methodEndpointInfo.Invoke(serviceEndpoint, new object[] {message}));
+                }
             }
             catch (Exception ex) {
                 Console.WriteLine(ex.Message);
