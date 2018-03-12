@@ -165,9 +165,10 @@ namespace Firestone
         /// Set up a new inbound connection
         /// </summary>
         private async Task ConnectionTask(TcpClient client) {
-            var clientIp = ((IPEndPoint)client.Client.RemoteEndPoint).Address;
+            // Set logging context as client IP address
+            log4net.LogicalThreadContext.Properties["Session"] = ((IPEndPoint)client.Client.RemoteEndPoint).Address;
 
-            Log.Info("Accepted inbound connection from " + clientIp);
+            Log.Info("Accepted inbound connection");
 
             var sslStream = new SslStream(client.GetStream(), false);
 
@@ -176,32 +177,31 @@ namespace Firestone
                 // Don't require client authentication; don't check for certificate revocation; accept any TLS version
                 await sslStream.AuthenticateAsServerAsync(certificate, false, SslProtocols.Tls, false);
 
-                Log.Info("TLS authentication succeeded for " + clientIp);
+                Log.Info("TLS authentication succeeded");
 
                 // Configure timeouts
                 sslStream.ReadTimeout = timeoutSeconds * 1000;
                 sslStream.WriteTimeout = timeoutSeconds * 1000;
 
                 // Create session and start the connection's message pump
-                await new Session(sslStream, clientIp).RunMessageLoop();
+                await new Session(sslStream).RunMessageLoop();
             }
 
             // Something is probably wrong with our SSL certificate or key
             catch (AuthenticationException ex) {
-                Log.Error("TLS authentication failed for " + clientIp + ": " + ex.Message);
+                Log.Error("TLS authentication failed for: " + ex.Message);
                 if (ex.InnerException != null)
                     Log.Error("TLS authentication failure details: " + ex.InnerException.Message);
             }
 
             // The client closed the connection. Most likely it rejected our certificate
             catch (IOException) {
-                Log.Error("TLS authentication failed for " + clientIp +
-                          " - server certificate validation must be disabled in the client in order to connect");
+                Log.Error("TLS authentication failed - server certificate validation must be disabled in the client in order to connect");
             }
 
             // Clean up
             finally {
-                Log.Info("Closing connection from " + clientIp);
+                Log.Info("Closing connection");
                 sslStream.Close();
                 client.Close();
             }

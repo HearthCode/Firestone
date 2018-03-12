@@ -25,11 +25,6 @@ namespace Firestone
         private SslStream stream;
 
         /// <summary>
-        /// The IP address of the connected client
-        /// </summary>
-        private IPAddress clientIp;
-
-        /// <summary>
         /// Bound RPC service endpoints imported from the client
         /// </summary>
         private Dictionary<int, Service> importedServices = new Dictionary<int, Service>();
@@ -43,11 +38,9 @@ namespace Firestone
         /// Create a new session
         /// </summary>
         /// <param name="stream">Authenticated SslStream of the connection</param>
-        /// <param name="ip">The client's IP address (for logging purposes)</param>
-        public Session(SslStream stream, IPAddress ip) {
+        public Session(SslStream stream) {
             // Store the underlying network connection and IP address
             this.stream = stream;
-            clientIp = ip;
 
             // Create a binding to the connection service (bnet.protocol.connection.ConnectionService)
             BindExportedService(0x65446991, 0);
@@ -62,7 +55,7 @@ namespace Firestone
         public bool BindExportedService(int hash, int index) {
             // Don't overwrite existing binding
             if (exportedServices.ContainsKey(index)) {
-                Log.Error($"[{clientIp}] Attempted to bind service with hash {hash} to already-used service ID {index}");
+                Log.Error($"Attempted to bind service with hash {hash} to already-used service ID {index}");
                 return false;
             }
 
@@ -73,11 +66,11 @@ namespace Firestone
                 service.Session = this;
 
                 exportedServices.Add(index, service);
-                Log.Debug($"[{clientIp}] Bound {service.Descriptor.Name} (Id {service.Descriptor.Id}) to session service Id {index}");
+                Log.Debug($"Bound {service.Descriptor.Name} (Id {service.Descriptor.Id}) to session service Id {index}");
                 return true;
             }
             catch (KeyNotFoundException) {
-                Log.Error($"[{clientIp}] Attempted to import service with unknown hash {hash} on ID {index}");
+                Log.Error($"Attempted to import service with unknown hash {hash} on ID {index}");
                 return false;
             }
         }
@@ -107,7 +100,7 @@ namespace Firestone
                 }
             }
             catch (Exception ex) {
-                Log.Error($"[{clientIp}] Session terminated: {ex.Message}");
+                Log.Error($"Session terminated: {ex.Message}");
             }
         }
     }
